@@ -35,8 +35,5 @@ public class DatabaseContract {
 
         @Column("byte_code")
         final byte byteCode = 1;
-
-        @Column("byte_array")
-        byte[] byteArray;
     }
 }

@@ -1,17 +1,11 @@
 package com.pugfish1992.autosqlite;
 
-import com.pugfish1992.autosqlite.core.EntityImpl;
-import com.pugfish1992.autosqlite.core.NullEntityImpl;
-import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.annotation.processing.Filer;
 import javax.lang.model.element.Modifier;

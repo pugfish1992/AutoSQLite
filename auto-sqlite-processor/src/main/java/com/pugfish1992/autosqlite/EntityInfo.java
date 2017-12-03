@@ -14,7 +14,7 @@ class EntityInfo {
     ClassName entityImplClass;
     ClassName nullEntityClass;
     ClassName diffClass;
-    ClassName tableClass;
+    ClassName sourceClass;
     FieldInfo primaryKeyField;
     List<FieldInfo> otherFields;
 }

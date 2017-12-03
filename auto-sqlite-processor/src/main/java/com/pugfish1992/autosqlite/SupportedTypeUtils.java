@@ -19,8 +19,7 @@ class SupportedTypeUtils {
                 isFloatType(typeName) ||
                 isDoubleType(typeName) ||
                 isStringType(typeName) ||
-                isByteType(typeName) ||
-                isByteArrayType(typeName);
+                isByteType(typeName);
     }
 
     static AffinityType affinityTypeFromSupportedJavaType(TypeName typeName) {
@@ -74,10 +73,6 @@ class SupportedTypeUtils {
         return TypeName.BYTE.equals(typeName);
     }
 
-    static boolean isByteArrayType(TypeName typeName) {
-        return Types.BYTE_ARRAY.equals(typeName);
-    }
-
     static boolean defaultBoolean() {
         return false;
     }
@@ -110,10 +105,6 @@ class SupportedTypeUtils {
         return 0;
     }
 
-    static byte[] defaultByteArray() {
-        return null;
-    }
-
     static Object defaultValueOf(TypeName typeName) {
         if (isBooleanType(typeName)) {
             return defaultBoolean();
@@ -131,8 +122,6 @@ class SupportedTypeUtils {
             return defaultDouble();
         } else if (isByteType(typeName)) {
             return defaultByte();
-        } else if (isByteArrayType(typeName)) {
-            return defaultByteArray();
         } else {
             return null;
         }

@@ -1,6 +1,5 @@
 package com.pugfish1992.autosqlite;
 
-import com.pugfish1992.autosqlite.core.EntityImpl;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
@@ -146,10 +145,6 @@ class ImplClassWriter {
             } else if (isStringType(type)) {
                 if (isLast) method.addStatement("return $L != null ? $L.equals(that.$L) : that.$L == null", name, name, name, name);
                 else method.addStatement("if ($L != null ? !$L.equals(that.$L) : that.$L != null) return false", name, name, name, name);
-
-            } else if (isByteArrayType(type)) {
-                if (isLast) method.addStatement("return $T.equals($L, that.$L)", Types.ARRAYS, name, name);
-                else method.addStatement("if (!$T.equals($L, that.$L)) return false", Types.ARRAYS, name, name);
             }
         }
         classSpec.addMethod(method.build());

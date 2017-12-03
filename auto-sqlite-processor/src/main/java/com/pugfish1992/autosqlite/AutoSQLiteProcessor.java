@@ -31,9 +31,11 @@ public class AutoSQLiteProcessor extends AbstractProcessor {
     private static final String PACKAGE_TO_GENERATE = "com.pugfish1992.autosqlite.build";
 
     private static final String DIFF_CLASS_SUFFIX = "Diff";
-    private static final String TABLE_CLASS_SUFFIX = "Table";
+    private static final String SOURCE_CLASS_SUFFIX = "Source";
     private static final String IMPL_CLASS_SUFFIX = "Impl";
     private static final String NULL_CLASS_PREFIX = "Null";
+
+    private static final String OPEN_HELPER_CLASS_NAME = "MyOpenHelper";
 
     private static final String PRIMARY_KEY_FIELD_NAME = "id";
     private static final Set<String> RESERVED_WORDS;
@@ -85,12 +87,12 @@ public class AutoSQLiteProcessor extends AbstractProcessor {
             String nullClassName = NULL_CLASS_PREFIX + interfaceName;
             String implClassName = interfaceName + IMPL_CLASS_SUFFIX;
             String diffClassName = interfaceName + DIFF_CLASS_SUFFIX;
-            String tableClassName = interfaceName + TABLE_CLASS_SUFFIX;
+            String sourceClassName = interfaceName + SOURCE_CLASS_SUFFIX;
             entityInfo.entityInterface = ClassName.get(PACKAGE_TO_GENERATE, interfaceName);
             entityInfo.entityImplClass = ClassName.get(PACKAGE_TO_GENERATE, implClassName);
             entityInfo.nullEntityClass = ClassName.get(PACKAGE_TO_GENERATE, nullClassName);
             entityInfo.diffClass = ClassName.get(PACKAGE_TO_GENERATE, diffClassName);
-            entityInfo.tableClass = ClassName.get(PACKAGE_TO_GENERATE, tableClassName);
+            entityInfo.sourceClass = ClassName.get(PACKAGE_TO_GENERATE, sourceClassName);
 
             for (Element nestedElement : element.getEnclosedElements()) {
                 if (nestedElement.getKind() != ElementKind.FIELD) continue;
@@ -126,14 +128,16 @@ public class AutoSQLiteProcessor extends AbstractProcessor {
             entityInfoList.add(entityInfo);
         }
 
+        ClassName openHelperClass = ClassName.get(PACKAGE_TO_GENERATE, OPEN_HELPER_CLASS_NAME);
+
         try {
             for (EntityInfo entityInfo : entityInfoList) {
                 InterfaceWriter.write(entityInfo, PACKAGE_TO_GENERATE, mFiler);
                 ImplClassWriter.write(entityInfo, PACKAGE_TO_GENERATE, mFiler);
                 NullClassWriter.write(entityInfo, PACKAGE_TO_GENERATE, mFiler);
                 DiffClassWriter.write(entityInfo, PACKAGE_TO_GENERATE, mFiler);
+                SourceClassWriter.write(entityInfo, openHelperClass, PACKAGE_TO_GENERATE, mFiler);
             }
-
         } catch (IOException e) {
             e.printStackTrace();
             mMessager.error("error creating java file");
