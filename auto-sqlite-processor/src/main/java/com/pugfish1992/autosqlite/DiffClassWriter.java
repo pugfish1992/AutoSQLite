@@ -19,7 +19,7 @@ import javax.lang.model.element.Modifier;
  * Created by daichi on 12/3/17.
  */
 
-public class DiffClassWriter {
+class DiffClassWriter {
     private static final String VAR_NAME_PREFIX = "m_";
     private static final String FLAG_NAME_PREFIX = "mSet_";
 
