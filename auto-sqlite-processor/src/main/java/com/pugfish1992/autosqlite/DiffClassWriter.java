@@ -23,19 +23,19 @@ class DiffClassWriter {
     private static final String VAR_NAME_PREFIX = "m_";
     private static final String FLAG_NAME_PREFIX = "mSet_";
 
-    static void write(EntityInfo entityInfo, String packageName, Filer filer)
-            throws IOException, RuntimeException {
+    static void write(EntityRecipe entityRecipe, ClassName entityImplClass, ClassName diffClass,
+                      ClassName entityInterface, String packageName, Filer filer) throws IOException, RuntimeException {
 
         TypeSpec.Builder classSpec = TypeSpec
-                .classBuilder(entityInfo.diffClass)
+                .classBuilder(diffClass)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 
         // variables & setters
-        for (FieldInfo fieldInfo : entityInfo.otherFields) {
-            String varName = VAR_NAME_PREFIX + fieldInfo.fieldName;
-            String flagName = FLAG_NAME_PREFIX + fieldInfo.fieldName;
+        for (FieldRecipe fieldRecipe : entityRecipe.otherFieldRecipes) {
+            String varName = VAR_NAME_PREFIX + fieldRecipe.fieldName;
+            String flagName = FLAG_NAME_PREFIX + fieldRecipe.fieldName;
 
-            classSpec.addField(FieldSpec.builder(fieldInfo.fieldType, varName)
+            classSpec.addField(FieldSpec.builder(fieldRecipe.fieldType, varName)
                     .addModifiers(Modifier.PRIVATE).build());
 
             classSpec.addField(FieldSpec.builder(TypeName.BOOLEAN, flagName)
@@ -44,11 +44,11 @@ class DiffClassWriter {
                     .build());
 
             classSpec.addMethod(MethodSpec
-                    .methodBuilder(fieldInfo.fieldName)
+                    .methodBuilder(fieldRecipe.fieldName)
                     .addModifiers(Modifier.PUBLIC)
-                    .returns(entityInfo.diffClass)
-                    .addParameter(ParameterSpec.builder(fieldInfo.fieldType, fieldInfo.fieldName).build())
-                    .addStatement("$L = $L", varName, fieldInfo.fieldName)
+                    .returns(diffClass)
+                    .addParameter(ParameterSpec.builder(fieldRecipe.fieldType, fieldRecipe.fieldName).build())
+                    .addStatement("$L = $L", varName, fieldRecipe.fieldName)
                     .addStatement("$L = true", flagName)
                     .addStatement("return this")
                     .build());
@@ -57,18 +57,18 @@ class DiffClassWriter {
         // apply method
         MethodSpec.Builder applyMethod = MethodSpec
                 .methodBuilder("apply")
-                .returns(entityInfo.entityInterface)
+                .returns(entityInterface)
                 .addParameter(ParameterSpec
-                        .builder(entityInfo.entityInterface, "source")
+                        .builder(entityInterface, "source")
                         .addAnnotation(NonNull.class)
                         .build())
-                .addCode("return new $T(source.id()", entityInfo.entityImplClass);
+                .addCode("return new $T(source.id()", entityImplClass);
 
-        for (FieldInfo fieldInfo : entityInfo.otherFields) {
+        for (FieldRecipe fieldRecipe : entityRecipe.otherFieldRecipes) {
             applyMethod.addCode("\n,($L) ? $L : source.$L()",
-                    FLAG_NAME_PREFIX + fieldInfo.fieldName,
-                    VAR_NAME_PREFIX + fieldInfo.fieldName,
-                    fieldInfo.fieldName);
+                    FLAG_NAME_PREFIX + fieldRecipe.fieldName,
+                    VAR_NAME_PREFIX + fieldRecipe.fieldName,
+                    fieldRecipe.fieldName);
         }
         applyMethod.addCode(");\n");
         classSpec.addMethod(applyMethod.build());

@@ -1,5 +1,6 @@
 package com.pugfish1992.autosqlite;
 
+import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
@@ -24,49 +25,49 @@ class ImplClassWriter {
 
     private static final String VARIABLE_NAME_PREFIX = "m_";
 
-    static void write(EntityInfo entityInfo, String packageName, Filer filer)
-            throws IOException, RuntimeException {
+    static void write(EntityRecipe entityRecipe, ClassName entityImplClass,
+                      ClassName entityInterface, String packageName, Filer filer) throws IOException, RuntimeException {
 
-        List<FieldInfo> allFields = new ArrayList<>();
-        allFields.add(entityInfo.primaryKeyField);
-        allFields.addAll(entityInfo.otherFields);
+        List<FieldRecipe> fieldRecipes = new ArrayList<>();
+        fieldRecipes.add(entityRecipe.pkFieldRecipe);
+        fieldRecipes.addAll(entityRecipe.otherFieldRecipes);
 
         TypeSpec.Builder classSpec = TypeSpec
-                .classBuilder(entityInfo.entityImplClass)
-                .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-                .addSuperinterface(entityInfo.entityInterface);
+                .classBuilder(entityImplClass)
+                .addModifiers(Modifier.FINAL)
+                .addSuperinterface(entityInterface);
 
         // Declare immutable fields
-        for (FieldInfo fieldInfo : allFields) {
+        for (FieldRecipe fieldRecipe : fieldRecipes) {
             classSpec.addField(FieldSpec
-                    .builder(fieldInfo.fieldType, VARIABLE_NAME_PREFIX + fieldInfo.fieldName)
+                    .builder(fieldRecipe.fieldType, VARIABLE_NAME_PREFIX + fieldRecipe.fieldName)
                     .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
                     .build());
         }
 
         // Define a protected all-args constructor
         MethodSpec.Builder method = MethodSpec.constructorBuilder().addModifiers(Modifier.PROTECTED);
-        for (FieldInfo fieldInfo : allFields) {
-            method.addParameter(ParameterSpec.builder(fieldInfo.fieldType, fieldInfo.fieldName).build());
-            method.addStatement("$L = $L", VARIABLE_NAME_PREFIX + fieldInfo.fieldName, fieldInfo.fieldName);
+        for (FieldRecipe fieldRecipe : fieldRecipes) {
+            method.addParameter(ParameterSpec.builder(fieldRecipe.fieldType, fieldRecipe.fieldName).build());
+            method.addStatement("$L = $L", VARIABLE_NAME_PREFIX + fieldRecipe.fieldName, fieldRecipe.fieldName);
         }
         classSpec.addMethod(method.build());
 
         // Override id() method
-        classSpec.addMethod(MethodSpec.methodBuilder(entityInfo.primaryKeyField.fieldName)
+        classSpec.addMethod(MethodSpec.methodBuilder(entityRecipe.pkFieldRecipe.fieldName)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .addAnnotation(Override.class)
-                .returns(entityInfo.primaryKeyField.fieldType)
-                .addStatement("return $L", VARIABLE_NAME_PREFIX + entityInfo.primaryKeyField.fieldName)
+                .returns(entityRecipe.pkFieldRecipe.fieldType)
+                .addStatement("return $L", VARIABLE_NAME_PREFIX + entityRecipe.pkFieldRecipe.fieldName)
                 .build());
 
         // Override accessor methods
-        for (FieldInfo fieldInfo : entityInfo.otherFields) {
-            classSpec.addMethod(MethodSpec.methodBuilder(fieldInfo.fieldName)
+        for (FieldRecipe fieldRecipe : entityRecipe.otherFieldRecipes) {
+            classSpec.addMethod(MethodSpec.methodBuilder(fieldRecipe.fieldName)
                     .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                     .addAnnotation(Override.class)
-                    .returns(fieldInfo.fieldType)
-                    .addStatement("return $L", VARIABLE_NAME_PREFIX + fieldInfo.fieldName)
+                    .returns(fieldRecipe.fieldType)
+                    .addStatement("return $L", VARIABLE_NAME_PREFIX + fieldRecipe.fieldName)
                     .build());
         }
 
@@ -123,12 +124,12 @@ class ImplClassWriter {
                 .addParameter(Types.OBJECT, "o")
                 .addStatement("if (this == o) return true")
                 .addStatement("if (o == null || getClass() != o.getClass()) return false")
-                .addStatement("$T that = ($T) o", entityInfo.entityImplClass, entityInfo.entityImplClass);
+                .addStatement("$T that = ($T) o", entityImplClass, entityImplClass);
 
-        for (int i = 0; i < allFields.size(); ++i) {
-            TypeName type = allFields.get(i).fieldType;
-            String name = VARIABLE_NAME_PREFIX + allFields.get(i).fieldName;
-            boolean isLast = (i + 1 == allFields.size());
+        for (int i = 0; i < fieldRecipes.size(); ++i) {
+            TypeName type = fieldRecipes.get(i).fieldType;
+            String name = VARIABLE_NAME_PREFIX + fieldRecipes.get(i).fieldName;
+            boolean isLast = (i + 1 == fieldRecipes.size());
 
             if (isIntType(type) || isLongType(type) || isBooleanType(type) || isByteType(type)) {
                 if (isLast) method.addStatement("return $L == that.$L", name, name);
@@ -157,9 +158,9 @@ class ImplClassWriter {
                 .addModifiers(Modifier.PUBLIC)
                 .returns(TypeName.INT)
                 .addCode("return $L.hash(\n", Types.OBJECTS)
-                .addCode("$L\n", VARIABLE_NAME_PREFIX + entityInfo.primaryKeyField.fieldName);
+                .addCode("$L\n", VARIABLE_NAME_PREFIX + entityRecipe.pkFieldRecipe.fieldName);
 
-        for (FieldInfo fieldInfo : entityInfo.otherFields) {
+        for (FieldRecipe fieldInfo : entityRecipe.otherFieldRecipes) {
             method.addCode(",$L\n", VARIABLE_NAME_PREFIX + fieldInfo.fieldName);
         }
 

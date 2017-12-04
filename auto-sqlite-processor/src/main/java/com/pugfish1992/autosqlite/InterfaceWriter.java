@@ -1,6 +1,7 @@
 package com.pugfish1992.autosqlite;
 
 import com.pugfish1992.autosqlite.core.Entity;
+import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
@@ -16,19 +17,19 @@ import javax.lang.model.element.Modifier;
 
 class InterfaceWriter {
 
-    static void write(EntityInfo entityInfo, String packageName, Filer filer)
+    static void write(EntityRecipe entityRecipe, ClassName entityInterface, String packageName, Filer filer)
             throws IOException, RuntimeException {
 
         TypeSpec.Builder classSpec = TypeSpec
-                .interfaceBuilder(entityInfo.entityInterface)
+                .interfaceBuilder(entityInterface)
                 .addModifiers(Modifier.PUBLIC)
                 .addSuperinterface(Entity.class);
 
         // Define accessor methods
-        for (FieldInfo fieldInfo : entityInfo.otherFields) {
-            classSpec.addMethod(MethodSpec.methodBuilder(fieldInfo.fieldName)
+        for (FieldRecipe fieldRecipe : entityRecipe.otherFieldRecipes) {
+            classSpec.addMethod(MethodSpec.methodBuilder(fieldRecipe.fieldName)
                     .addModifiers(Modifier.ABSTRACT, Modifier.PUBLIC)
-                    .returns(fieldInfo.fieldType)
+                    .returns(fieldRecipe.fieldType)
                     .build());
         }
 

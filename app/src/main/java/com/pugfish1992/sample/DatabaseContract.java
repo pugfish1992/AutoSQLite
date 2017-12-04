@@ -6,34 +6,35 @@ import com.pugfish1992.autosqlite.annotation.*;
  * Created by daichi on 12/3/17.
  */
 
+@CurrentVersion
 @Database(name = "AutoSQLite.db", version = 1)
 public class DatabaseContract {
 
     @Entity("post")
     class PostContract {
 
-        @Column("disliked_count")
+        @Field("disliked_count")
         short dislikedCount;
 
-        @Column("liked_count")
+        @Field("liked_count")
         int likedCount;
 
-        @Column("view_count")
+        @Field("view_count")
         long viewCount;
 
-        @Column("ratio")
+        @Field("ratio")
         float ratio;
 
-        @Column("pi")
+        @Field("pi")
         double pi;
 
-        @Column("is_archived")
+        @Field("is_archived")
         boolean isArchived;
 
-        @Column("text")
+        @Field("text")
         String text;
 
-        @Column("byte_code")
+        @Field("byte_code")
         final byte byteCode = 1;
     }
 }

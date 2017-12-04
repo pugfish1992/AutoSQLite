@@ -6,11 +6,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by daichi on 12/3/17.
+ * Created by daichi on 12/4/17.
  */
 
 @Retention(RetentionPolicy.SOURCE)
-@Target(ElementType.FIELD)
-public @interface Column {
-    String value();
+@Target(ElementType.TYPE)
+public @interface CurrentVersion {
 }

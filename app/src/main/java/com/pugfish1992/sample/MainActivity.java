@@ -9,6 +9,9 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.pugfish1992.autosqlite.build.PostDiff;
+import com.pugfish1992.autosqlite.build.PostSource;
+
 public class MainActivity extends AppCompatActivity {
 
     @Override
@@ -26,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
                         .setAction("Action", null).show();
             }
         });
+
     }
 
     @Override

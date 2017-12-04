@@ -1,5 +1,6 @@
 package com.pugfish1992.autosqlite;
 
+import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
@@ -16,24 +17,24 @@ import javax.lang.model.element.Modifier;
 
 class NullClassWriter {
 
-    static void write(EntityInfo entityInfo, String packageName, Filer filer)
+    static void write(EntityRecipe entityRecipe, ClassName entityInterface, ClassName nullEntityClass, String packageName, Filer filer)
             throws IOException, RuntimeException {
 
         TypeSpec.Builder classSpec = TypeSpec
-                .classBuilder(entityInfo.nullEntityClass)
-                .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-                .addSuperinterface(entityInfo.entityInterface);
+                .classBuilder(nullEntityClass)
+                .addModifiers(Modifier.FINAL)
+                .addSuperinterface(entityInterface);
 
         // Override accessor methods
-        for (FieldInfo fieldInfo : entityInfo.otherFields) {
-            Object returnValue = (fieldInfo.defaultValue != null)
-                    ? fieldInfo.defaultValue
-                    : SupportedTypeUtils.defaultValueOf(fieldInfo.fieldType);
+        for (FieldRecipe fieldRecipe : entityRecipe.otherFieldRecipes) {
+            Object returnValue = (fieldRecipe.defaultValue != null)
+                    ? fieldRecipe.defaultValue
+                    : SupportedTypeUtils.defaultValueOf(fieldRecipe.fieldType);
 
-            classSpec.addMethod(MethodSpec.methodBuilder(fieldInfo.fieldName)
+            classSpec.addMethod(MethodSpec.methodBuilder(fieldRecipe.fieldName)
                     .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                     .addAnnotation(Override.class)
-                    .returns(fieldInfo.fieldType)
+                    .returns(fieldRecipe.fieldType)
                     .addStatement("return $L", Literal.of(returnValue))
                     .build());
         }
