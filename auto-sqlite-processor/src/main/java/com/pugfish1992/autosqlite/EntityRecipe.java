@@ -1,7 +1,8 @@
 package com.pugfish1992.autosqlite;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Created by daichi on 12/4/17.
@@ -9,38 +10,40 @@ import java.util.Set;
 
 class EntityRecipe {
 
-    final String name;
-    final FieldRecipe pkFieldRecipe;
-    final Set<FieldRecipe> otherFieldRecipes;
+    private final String mName;
+    private final FieldRecipe mPkFieldRecipe;
+    private final List<FieldRecipe> mOtherFieldRecipes;
 
     EntityRecipe(String name, FieldRecipe pkFieldRecipe) {
-        this.name = name;
-        this.pkFieldRecipe = pkFieldRecipe;
-        this.otherFieldRecipes = new HashSet<>();
+        this.mName = name;
+        this.mPkFieldRecipe = pkFieldRecipe;
+        this.mOtherFieldRecipes = new ArrayList<>();
     }
 
     void addFieldRecipe(FieldRecipe fieldRecipe) {
-        otherFieldRecipes.add(fieldRecipe);
+        mOtherFieldRecipes.add(fieldRecipe);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        EntityRecipe that = (EntityRecipe) o;
-
-        if (name != null ? !name.equals(that.name) : that.name != null) return false;
-        if (pkFieldRecipe != null ? !pkFieldRecipe.equals(that.pkFieldRecipe) : that.pkFieldRecipe != null)
-            return false;
-        return otherFieldRecipes != null ? otherFieldRecipes.equals(that.otherFieldRecipes) : that.otherFieldRecipes == null;
+    void addFieldRecipes(List<FieldRecipe> fieldRecipes) {
+        mOtherFieldRecipes.addAll(fieldRecipes);
     }
 
-    @Override
-    public int hashCode() {
-        int result = name != null ? name.hashCode() : 0;
-        result = 31 * result + (pkFieldRecipe != null ? pkFieldRecipe.hashCode() : 0);
-        result = 31 * result + (otherFieldRecipes != null ? otherFieldRecipes.hashCode() : 0);
-        return result;
+    String getName() {
+        return mName;
+    }
+
+    FieldRecipe getPkFieldRecipe() {
+        return mPkFieldRecipe;
+    }
+
+    List<FieldRecipe> getAllFieldRecipes() {
+        List<FieldRecipe> all = new ArrayList<>();
+        all.add(mPkFieldRecipe);
+        all.addAll(mOtherFieldRecipes);
+        return Collections.unmodifiableList(all);
+    }
+
+    List<FieldRecipe> getOtherFieldRecipes() {
+        return Collections.unmodifiableList(mOtherFieldRecipes);
     }
 }

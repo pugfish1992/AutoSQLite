@@ -1,9 +1,8 @@
 package com.pugfish1992.autosqlite;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Created by daichi on 12/4/17.
@@ -11,22 +10,33 @@ import java.util.Set;
 
 class DatabaseRecipe {
 
-    final String name;
-    final Map<Integer, Set<EntityRecipe>> versionedEntityRecipeSets;
+    private final String mName;
+    private final int mVersion;
+    private final List<EntityRecipe> mEntityRecipes;
 
-    DatabaseRecipe(String name) {
-        this.name = name;
-        versionedEntityRecipeSets = new HashMap<>();
+    DatabaseRecipe(String name, int version) {
+        mName = name;
+        mVersion = version;
+        mEntityRecipes = new ArrayList<>();
     }
 
-    void addEntityRecipeWithVersion(EntityRecipe entityRecipe, int version) {
-        if (!versionedEntityRecipeSets.containsKey(version)) {
-            versionedEntityRecipeSets.put(version, new HashSet<EntityRecipe>());
-        }
-        versionedEntityRecipeSets.get(version).add(entityRecipe);
+    void addEntityRecipe(EntityRecipe entityRecipe) {
+        mEntityRecipes.add(entityRecipe);
     }
 
-    Set<EntityRecipe> findEntityRecipeSetOfVersion(int version) {
-        return versionedEntityRecipeSets.get(version);
+    void addEntityRecipes(List<EntityRecipe> entityRecipes) {
+        mEntityRecipes.addAll(entityRecipes);
+    }
+
+    List<EntityRecipe> getEntityRecipes() {
+        return Collections.unmodifiableList(mEntityRecipes);
+    }
+
+    String getName() {
+        return mName;
+    }
+
+    int getVersion() {
+        return mVersion;
     }
 }

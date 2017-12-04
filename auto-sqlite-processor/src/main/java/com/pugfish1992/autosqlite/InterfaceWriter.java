@@ -26,10 +26,10 @@ class InterfaceWriter {
                 .addSuperinterface(Entity.class);
 
         // Define accessor methods
-        for (FieldRecipe fieldRecipe : entityRecipe.otherFieldRecipes) {
-            classSpec.addMethod(MethodSpec.methodBuilder(fieldRecipe.fieldName)
+        for (FieldRecipe fieldRecipe : entityRecipe.getOtherFieldRecipes()) {
+            classSpec.addMethod(MethodSpec.methodBuilder(fieldRecipe.getFieldName())
                     .addModifiers(Modifier.ABSTRACT, Modifier.PUBLIC)
-                    .returns(fieldRecipe.fieldType)
+                    .returns(fieldRecipe.getFieldType())
                     .build());
         }
 

@@ -1,6 +1,7 @@
 package com.pugfish1992.autosqlite;
 
 
+import com.pugfish1992.autosqlite.core.Entity;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
@@ -28,13 +29,8 @@ class OpenHelperWriter {
     private static final String VAR_CURRENT_DB_VERSION = "CURRENT_DB_VERSION";
     private static final String VAR_DB_NAME = "DB_NAME";
 
-    static void write(int currentVersion, DatabaseRecipe databaseRecipe, ClassName openHelperClass,
+    static void write(int currentVersion, VersionedDatabaseRecipes versionedDatabaseRecipes, ClassName openHelperClass,
                       String packageName, Filer filer) throws IOException, RuntimeException {
-
-        Set<EntityRecipe> entityRecipeSetOfCurrentDbVersion = databaseRecipe.findEntityRecipeSetOfVersion(currentVersion);
-        if (entityRecipeSetOfCurrentDbVersion == null) {
-            throw new RuntimeException("Cannot find EntityRecipes for the current db version");
-        }
 
         TypeSpec.Builder classSpec = TypeSpec
                 .classBuilder(openHelperClass)
@@ -46,7 +42,7 @@ class OpenHelperWriter {
         classSpec.addField(FieldSpec
                 .builder(Types.STRING, VAR_DB_NAME)
                 .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
-                .initializer("$S", databaseRecipe.name)
+                .initializer("$S", versionedDatabaseRecipes.getDatabaseName())
                 .build());
 
 //        private static final int CURRENT_DB_VERSION = ...;

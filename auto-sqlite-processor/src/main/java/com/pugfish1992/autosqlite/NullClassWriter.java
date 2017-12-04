@@ -26,15 +26,15 @@ class NullClassWriter {
                 .addSuperinterface(entityInterface);
 
         // Override accessor methods
-        for (FieldRecipe fieldRecipe : entityRecipe.otherFieldRecipes) {
-            Object returnValue = (fieldRecipe.defaultValue != null)
-                    ? fieldRecipe.defaultValue
-                    : SupportedTypeUtils.defaultValueOf(fieldRecipe.fieldType);
+        for (FieldRecipe fieldRecipe : entityRecipe.getOtherFieldRecipes()) {
+            Object returnValue = (fieldRecipe.getDefaultValue() != null)
+                    ? fieldRecipe.getDefaultValue()
+                    : SupportedTypeUtils.defaultValueOf(fieldRecipe.getFieldType());
 
-            classSpec.addMethod(MethodSpec.methodBuilder(fieldRecipe.fieldName)
+            classSpec.addMethod(MethodSpec.methodBuilder(fieldRecipe.getFieldName())
                     .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                     .addAnnotation(Override.class)
-                    .returns(fieldRecipe.fieldType)
+                    .returns(fieldRecipe.getFieldType())
                     .addStatement("return $L", Literal.of(returnValue))
                     .build());
         }

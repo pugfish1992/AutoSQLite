@@ -6,9 +6,8 @@ import com.pugfish1992.autosqlite.annotation.*;
  * Created by daichi on 12/3/17.
  */
 
-@CurrentVersion
 @Database(name = "AutoSQLite.db", version = 1)
-public class DatabaseContract {
+public class DatabaseContractV1 {
 
     @Entity("post")
     class PostContract {

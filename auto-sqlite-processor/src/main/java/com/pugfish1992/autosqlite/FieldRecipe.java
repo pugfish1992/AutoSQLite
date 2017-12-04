@@ -9,45 +9,37 @@ import com.squareup.javapoet.TypeName;
 
 
 class FieldRecipe {
-
-    final String fieldName;
-    final TypeName fieldType;
-    final String columnName;
-    final AffinityType columnType;
-    final Object defaultValue;
+    private final String mFieldName;
+    private final TypeName mFieldType;
+    private final String mColumnName;
+    private final AffinityType mColumnType;
+    private final Object mDefaultValue;
 
     FieldRecipe(String fieldName, TypeName fieldType, String columnName, AffinityType columnType, Object defaultValue) {
-        this.fieldName = fieldName;
-        this.fieldType = fieldType;
-        this.columnName = columnName;
-        this.columnType = columnType;
-        this.defaultValue = defaultValue;
+        mFieldName = fieldName;
+        mFieldType = fieldType;
+        mColumnName = columnName;
+        mColumnType = columnType;
+        mDefaultValue = defaultValue;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        FieldRecipe that = (FieldRecipe) o;
-
-        if (fieldName != null ? !fieldName.equals(that.fieldName) : that.fieldName != null)
-            return false;
-        if (fieldType != null ? !fieldType.equals(that.fieldType) : that.fieldType != null)
-            return false;
-        if (columnName != null ? !columnName.equals(that.columnName) : that.columnName != null)
-            return false;
-        if (columnType != that.columnType) return false;
-        return defaultValue != null ? defaultValue.equals(that.defaultValue) : that.defaultValue == null;
+    String getFieldName() {
+        return mFieldName;
     }
 
-    @Override
-    public int hashCode() {
-        int result = fieldName != null ? fieldName.hashCode() : 0;
-        result = 31 * result + (fieldType != null ? fieldType.hashCode() : 0);
-        result = 31 * result + (columnName != null ? columnName.hashCode() : 0);
-        result = 31 * result + (columnType != null ? columnType.hashCode() : 0);
-        result = 31 * result + (defaultValue != null ? defaultValue.hashCode() : 0);
-        return result;
+    TypeName getFieldType() {
+        return mFieldType;
+    }
+
+    String getColumnName() {
+        return mColumnName;
+    }
+
+    AffinityType getColumnType() {
+        return mColumnType;
+    }
+
+    Object getDefaultValue() {
+        return mDefaultValue;
     }
 }

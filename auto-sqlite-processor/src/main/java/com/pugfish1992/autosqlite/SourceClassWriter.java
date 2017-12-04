@@ -14,6 +14,7 @@ import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.annotation.processing.Filer;
 import javax.lang.model.element.Modifier;
@@ -40,11 +41,13 @@ class SourceClassWriter {
                       ClassName entityImplClass, ClassName nullEntityClass, ClassName diffClass,
                       ClassName openHelperClass, String packageName, Filer filer) throws IOException, RuntimeException {
 
+        List<FieldRecipe> fieldRecipesExcludePkField = entityRecipe.getOtherFieldRecipes();
+
         TypeSpec.Builder classSpec = TypeSpec
                 .classBuilder(sourceClass)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 
-        final String tableName = entityRecipe.name;
+        final String tableName = entityRecipe.getName();
 
 //        private static final NullXXX NULL_OBJECT = new NullXXX();
 
@@ -58,9 +61,9 @@ class SourceClassWriter {
 
         StringBuilder statement = new StringBuilder(
                 String.format("create if not exists %s(%s %s primary key",
-                tableName, entityRecipe.pkFieldRecipe.columnName, entityRecipe.pkFieldRecipe.columnType.toString()));
-        for (FieldRecipe fieldRecipe : entityRecipe.otherFieldRecipes) {
-            statement.append(String.format(", %s %s", fieldRecipe.columnName, fieldRecipe.columnType.toString()));
+                tableName, entityRecipe.getPkFieldRecipe().getColumnName(), entityRecipe.getPkFieldRecipe().getColumnType().toString()));
+        for (FieldRecipe fieldRecipe : fieldRecipesExcludePkField) {
+            statement.append(String.format(", %s %s", fieldRecipe.getColumnName(), fieldRecipe.getColumnType().toString()));
         }
         statement.append(");");
         classSpec.addField(FieldSpec
@@ -99,27 +102,27 @@ class SourceClassWriter {
                 .returns(entityInterface)
                 .addParameter(ParameterSpec.builder(Types.CURSOR, "cursor").addAnnotation(NonNull.class).build())
                 .addCode("return new $T(\n", entityImplClass)
-                .addCode("cursor.getLong(cursor.getColumnIndexOrThrow($S))", entityRecipe.pkFieldRecipe.columnName);
+                .addCode("cursor.getLong(cursor.getColumnIndexOrThrow($S))", entityRecipe.getPkFieldRecipe().getColumnName());
 
-        for (FieldRecipe fieldRecipe : entityRecipe.otherFieldRecipes) {
-            if (isBooleanType(fieldRecipe.fieldType)) {
-                methodSpec.addCode(",\ncursor.getInt(cursor.getColumnIndexOrThrow($S)) != 0", fieldRecipe.columnName);
-            } else if (isShortType(fieldRecipe.fieldType)) {
-                methodSpec.addCode(",\ncursor.getShort(cursor.getColumnIndexOrThrow($S))", fieldRecipe.columnName);
-            } else if (isIntType(fieldRecipe.fieldType)) {
-                methodSpec.addCode(",\ncursor.getInt(cursor.getColumnIndexOrThrow($S))", fieldRecipe.columnName);
-            } else if (isLongType(fieldRecipe.fieldType)) {
-                methodSpec.addCode(",\ncursor.getLong(cursor.getColumnIndexOrThrow($S))", fieldRecipe.columnName);
-            } else if (isFloatType(fieldRecipe.fieldType)) {
-                methodSpec.addCode(",\ncursor.getFloat(cursor.getColumnIndexOrThrow($S))", fieldRecipe.columnName);
-            } else if (isDoubleType(fieldRecipe.fieldType)) {
-                methodSpec.addCode(",\ncursor.getDouble(cursor.getColumnIndexOrThrow($S))", fieldRecipe.columnName);
-            } else if (isByteType(fieldRecipe.fieldType)) {
-                methodSpec.addCode(",\ncursor.getBlob(cursor.getColumnIndexOrThrow($S))[0]", fieldRecipe.columnName);
-            } else if (isStringType(fieldRecipe.fieldType)) {
-                methodSpec.addCode(",\ncursor.getString(cursor.getColumnIndexOrThrow($S))", fieldRecipe.columnName);
+        for (FieldRecipe fieldRecipe : fieldRecipesExcludePkField) {
+            if (isBooleanType(fieldRecipe.getFieldType())) {
+                methodSpec.addCode(",\ncursor.getInt(cursor.getColumnIndexOrThrow($S)) != 0", fieldRecipe.getColumnName());
+            } else if (isShortType(fieldRecipe.getFieldType())) {
+                methodSpec.addCode(",\ncursor.getShort(cursor.getColumnIndexOrThrow($S))", fieldRecipe.getColumnName());
+            } else if (isIntType(fieldRecipe.getFieldType())) {
+                methodSpec.addCode(",\ncursor.getInt(cursor.getColumnIndexOrThrow($S))", fieldRecipe.getColumnName());
+            } else if (isLongType(fieldRecipe.getFieldType())) {
+                methodSpec.addCode(",\ncursor.getLong(cursor.getColumnIndexOrThrow($S))", fieldRecipe.getColumnName());
+            } else if (isFloatType(fieldRecipe.getFieldType())) {
+                methodSpec.addCode(",\ncursor.getFloat(cursor.getColumnIndexOrThrow($S))", fieldRecipe.getColumnName());
+            } else if (isDoubleType(fieldRecipe.getFieldType())) {
+                methodSpec.addCode(",\ncursor.getDouble(cursor.getColumnIndexOrThrow($S))", fieldRecipe.getColumnName());
+            } else if (isByteType(fieldRecipe.getFieldType())) {
+                methodSpec.addCode(",\ncursor.getBlob(cursor.getColumnIndexOrThrow($S))[0]", fieldRecipe.getColumnName());
+            } else if (isStringType(fieldRecipe.getFieldType())) {
+                methodSpec.addCode(",\ncursor.getString(cursor.getColumnIndexOrThrow($S))", fieldRecipe.getColumnName());
             } else {
-                throw new RuntimeException("unsupported type > " + fieldRecipe.fieldType.toString());
+                throw new RuntimeException("unsupported type > " + fieldRecipe.getFieldType().toString());
             }
         }
 
@@ -142,13 +145,13 @@ class SourceClassWriter {
                 .addParameter(ParameterSpec.builder(entityInterface, "entity").addAnnotation(NonNull.class).build())
                 .addParameter(ParameterSpec.builder(TypeName.BOOLEAN, "includeID").build())
                 .addStatement("$T values = new $T()", Types.CONTENT_VALUES, Types.CONTENT_VALUES)
-                .addStatement("if(includeID) values.put($S, entity.$L())", entityRecipe.pkFieldRecipe.columnName, entityRecipe.pkFieldRecipe.fieldName);
+                .addStatement("if(includeID) values.put($S, entity.$L())", entityRecipe.getPkFieldRecipe().getColumnName(), entityRecipe.getPkFieldRecipe().getFieldName());
 
-        for (FieldRecipe fieldRecipe : entityRecipe.otherFieldRecipes) {
-            if (isBooleanType(fieldRecipe.fieldType)) {
-                methodSpec.addStatement("values.put($S, entity.$L() ? 1 : 0)", fieldRecipe.columnName, fieldRecipe.fieldName);
+        for (FieldRecipe fieldRecipe : fieldRecipesExcludePkField) {
+            if (isBooleanType(fieldRecipe.getFieldType())) {
+                methodSpec.addStatement("values.put($S, entity.$L() ? 1 : 0)", fieldRecipe.getColumnName(), fieldRecipe.getFieldName());
             } else {
-                methodSpec.addStatement("values.put($S, entity.$L())", fieldRecipe.columnName, fieldRecipe.fieldName);
+                methodSpec.addStatement("values.put($S, entity.$L())", fieldRecipe.getColumnName(), fieldRecipe.getFieldName());
             }
         }
 
@@ -195,7 +198,7 @@ class SourceClassWriter {
                 .returns(entityInterface)
                 .addParameter(ParameterSpec.builder(TypeName.LONG, "id").build())
                 .addParameter(ParameterSpec.builder(Types.SQLITE_DATABASE, "db").addAnnotation(NonNull.class).build())
-                .addStatement("$T selection = \"$L = \" + $T.valueOf(id)", Types.STRING, entityRecipe.pkFieldRecipe.columnName, Types.STRING)
+                .addStatement("$T selection = \"$L = \" + $T.valueOf(id)", Types.STRING, entityRecipe.getPkFieldRecipe().getColumnName(), Types.STRING)
                 .addStatement("$T cursor = db.query($S, null, selection, null, null, null, null)", Types.CURSOR, tableName)
                 .addStatement("$T entity", entityInterface)
                 .beginControlFlow("if (cursor.getCount() == 1)")
@@ -256,7 +259,7 @@ class SourceClassWriter {
                 .addParameter(ParameterSpec.builder(Types.SQLITE_DATABASE, "db").addAnnotation(NonNull.class).build())
                 .addStatement("if (!entity.isEnable()) return entity")
                 .addStatement("$T newEntity = diff.apply(entity)", entityInterface)
-                .addStatement("$T selection = \"$L = \" + $T.valueOf(entity.id())", Types.STRING, entityRecipe.pkFieldRecipe.columnName, Types.STRING)
+                .addStatement("$T selection = \"$L = \" + $T.valueOf(entity.id())", Types.STRING, entityRecipe.getPkFieldRecipe().getColumnName(), Types.STRING)
                 .addStatement("$T values = entityToContentValues(newEntity, true)", Types.CONTENT_VALUES)
                 .addStatement("$T wasSuccessful", TypeName.BOOLEAN)
                 .addStatement("db.beginTransaction()")
@@ -303,7 +306,7 @@ class SourceClassWriter {
                 .addParameter(ParameterSpec.builder(entityInterface, "entity").addAnnotation(NonNull.class).build())
                 .addParameter(ParameterSpec.builder(Types.SQLITE_DATABASE, "db").addAnnotation(NonNull.class).build())
                 .addStatement("if (!entity.isEnable()) return")
-                .addStatement("$T selection = \"$L = \" + $T.valueOf(entity.id())", Types.STRING, entityRecipe.pkFieldRecipe.columnName, Types.STRING)
+                .addStatement("$T selection = \"$L = \" + $T.valueOf(entity.id())", Types.STRING, entityRecipe.getPkFieldRecipe().getColumnName(), Types.STRING)
                 .addStatement("db.beginTransaction()")
                 .beginControlFlow("try")
                 .addStatement("$T affected = db.delete($S, selection, null)", TypeName.INT, tableName)
@@ -333,13 +336,13 @@ class SourceClassWriter {
                 .addAnnotation(NonNull.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(entityInterface);
-        for (FieldRecipe fieldRecipe : entityRecipe.otherFieldRecipes) {
-            methodSpec.addParameter(ParameterSpec.builder(fieldRecipe.fieldType, fieldRecipe.fieldName).build());
+        for (FieldRecipe fieldRecipe : fieldRecipesExcludePkField) {
+            methodSpec.addParameter(ParameterSpec.builder(fieldRecipe.getFieldType(), fieldRecipe.getFieldName()).build());
         }
 
         methodSpec.addCode("$T entity = new $T($T.INVALID_ID", entityInterface, entityImplClass, Types.ENTITY);
-        for (FieldRecipe fieldRecipe : entityRecipe.otherFieldRecipes) {
-            methodSpec.addCode(",\n$L", fieldRecipe.fieldName);
+        for (FieldRecipe fieldRecipe : fieldRecipesExcludePkField) {
+            methodSpec.addCode(",\n$L", fieldRecipe.getFieldName());
         }
 
         methodSpec
@@ -350,8 +353,8 @@ class SourceClassWriter {
                 .addStatement("db.close()")
                 .beginControlFlow("if(newRowId != -1)")
                 .addCode("return new $T(newRowId", entityImplClass);
-        for (FieldRecipe fieldRecipe : entityRecipe.otherFieldRecipes) {
-            methodSpec.addCode(",\nentity.$L()", fieldRecipe.fieldName);
+        for (FieldRecipe fieldRecipe : fieldRecipesExcludePkField) {
+            methodSpec.addCode(",\nentity.$L()", fieldRecipe.getFieldName());
         }
 
         methodSpec
