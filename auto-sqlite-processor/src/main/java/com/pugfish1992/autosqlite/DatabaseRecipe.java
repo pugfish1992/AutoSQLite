@@ -1,6 +1,8 @@
 package com.pugfish1992.autosqlite;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -10,36 +12,21 @@ import java.util.Set;
 class DatabaseRecipe {
 
     final String name;
-    final int version;
-    final Set<EntityRecipe> entityRecipes;
+    final Map<Integer, Set<EntityRecipe>> versionedEntityRecipeSets;
 
-    DatabaseRecipe(String name, int version) {
+    DatabaseRecipe(String name) {
         this.name = name;
-        this.version = version;
-        entityRecipes = new HashSet<>();
+        versionedEntityRecipeSets = new HashMap<>();
     }
 
-    void addEntityRecipe(EntityRecipe entityRecipe) {
-        entityRecipes.add(entityRecipe);
+    void addEntityRecipeWithVersion(EntityRecipe entityRecipe, int version) {
+        if (!versionedEntityRecipeSets.containsKey(version)) {
+            versionedEntityRecipeSets.put(version, new HashSet<EntityRecipe>());
+        }
+        versionedEntityRecipeSets.get(version).add(entityRecipe);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        DatabaseRecipe that = (DatabaseRecipe) o;
-
-        if (version != that.version) return false;
-        if (name != null ? !name.equals(that.name) : that.name != null) return false;
-        return entityRecipes != null ? entityRecipes.equals(that.entityRecipes) : that.entityRecipes == null;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = name != null ? name.hashCode() : 0;
-        result = 31 * result + version;
-        result = 31 * result + (entityRecipes != null ? entityRecipes.hashCode() : 0);
-        return result;
+    Set<EntityRecipe> findEntityRecipeSetOfVersion(int version) {
+        return versionedEntityRecipeSets.get(version);
     }
 }

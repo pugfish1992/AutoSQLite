@@ -11,10 +11,8 @@ import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.TypeName;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -190,9 +188,8 @@ public class AutoSQLiteProcessor extends AbstractProcessor {
     private boolean newProcess(RoundEnvironment roundEnvironment) {
 
         // key is a db name
-        Set<String> databaseNames = new HashSet<>();
-        Map<String, DatabaseRecipe> databaseRecipesOfCurrentVersion = new HashMap<>();
-        Map<String, Set<DatabaseRecipe>> versionedDatabaseRecipes = new HashMap<>();
+        Map<String, Integer> dbNamesWithCurrentDbVersion = new HashMap<>();
+        Map<String, DatabaseRecipe> dbNamesWithDatabaseRecipe = new HashMap<>();
 
         for (Element element : roundEnvironment.getElementsAnnotatedWith(Database.class)) {
             if (element.getKind() != ElementKind.CLASS) {
@@ -207,40 +204,62 @@ public class AutoSQLiteProcessor extends AbstractProcessor {
                 mMessager.error(element, "Please specify database name");
                 return false;
             }
-            databaseNames.add(dbName);
 
-            DatabaseRecipe databaseRecipe = new DatabaseRecipe(dbName, dbVersion);
-            if (!versionedDatabaseRecipes.containsKey(dbName)) {
-                versionedDatabaseRecipes.put(dbName, new HashSet<DatabaseRecipe>());
+            DatabaseRecipe databaseRecipe = dbNamesWithDatabaseRecipe.get(dbName);
+            if (databaseRecipe == null) {
+                databaseRecipe = new DatabaseRecipe(dbName);
             }
-            versionedDatabaseRecipes.get(dbName).add(databaseRecipe);
 
             CurrentVersion currentVersionAnno = element.getAnnotation(CurrentVersion.class);
             if (currentVersionAnno != null) {
-                if (databaseRecipesOfCurrentVersion.containsKey(dbName)) {
+                if (dbNamesWithCurrentDbVersion.containsKey(dbName)) {
                     mMessager.error(element, "ambiguous current db version of '%s'", dbName);
                     return false;
                 }
-                databaseRecipesOfCurrentVersion.put(dbName, databaseRecipe);
+                dbNamesWithCurrentDbVersion.put(dbName, dbVersion);
             }
 
             for (Element nestedElement : element.getEnclosedElements()) {
                 EntityRecipe entityRecipe = extractEntityRecipeIfPossibleFrom(nestedElement);
                 if (entityRecipe != null) {
-                    databaseRecipe.addEntityRecipe(entityRecipe);
+                    databaseRecipe.addEntityRecipeWithVersion(entityRecipe, dbVersion);
                 }
             }
         }
 
-        for (String dbName : databaseNames) {
-            DatabaseRecipe databaseRecipe = databaseRecipesOfCurrentVersion.get(dbName);
-            if (databaseRecipe == null) {
-                mMessager.error("current db version of '%s' is not specified", dbName);
+        for (DatabaseRecipe databaseRecipe : dbNamesWithDatabaseRecipe.values()) {
+            if (!dbNamesWithCurrentDbVersion.containsKey(databaseRecipe.name)) {
+                mMessager.error("current db version of '%s' is not specified", databaseRecipe.name);
                 return false;
             }
 
+            int currentDbVersion = dbNamesWithCurrentDbVersion.get(databaseRecipe.name);
+            String openHelperClassName = toPascalCase(databaseRecipe.name) + OPEN_HELPER_CLASS_SUFFIX;
+            ClassName openHelperClass = ClassName.get(PACKAGE_TO_GENERATE, openHelperClassName);
+
             try {
-                writeClassesForDatabase(databaseRecipe, versionedDatabaseRecipes.get(dbName));
+                for (EntityRecipe entityRecipe : databaseRecipe.findEntityRecipeSetOfVersion(currentDbVersion)) {
+                    String interfaceName = toPascalCase(entityRecipe.name);
+                    String nullClassName = NULL_CLASS_PREFIX + interfaceName;
+                    String implClassName = interfaceName + IMPL_CLASS_SUFFIX;
+                    String diffClassName = interfaceName + DIFF_CLASS_SUFFIX;
+                    String sourceClassName = interfaceName + SOURCE_CLASS_SUFFIX;
+                    ClassName entityInterface = ClassName.get(PACKAGE_TO_GENERATE, interfaceName);
+                    ClassName entityImplClass = ClassName.get(PACKAGE_TO_GENERATE, implClassName);
+                    ClassName nullEntityClass = ClassName.get(PACKAGE_TO_GENERATE, nullClassName);
+                    ClassName diffClass = ClassName.get(PACKAGE_TO_GENERATE, diffClassName);
+                    ClassName sourceClass = ClassName.get(PACKAGE_TO_GENERATE, sourceClassName);
+
+                    InterfaceWriter.write(entityRecipe, entityInterface, PACKAGE_TO_GENERATE, mFiler);
+                    ImplClassWriter.write(entityRecipe, entityImplClass, entityInterface, PACKAGE_TO_GENERATE, mFiler);
+                    NullClassWriter.write(entityRecipe, entityInterface, nullEntityClass, PACKAGE_TO_GENERATE, mFiler);
+                    DiffClassWriter.write(entityRecipe, entityImplClass, diffClass, entityInterface, PACKAGE_TO_GENERATE, mFiler);
+                    SourceClassWriter.write(entityRecipe, sourceClass, entityInterface,
+                            entityImplClass, nullEntityClass, diffClass, openHelperClass, PACKAGE_TO_GENERATE, mFiler);
+                }
+
+                OpenHelperWriter.write(currentDbVersion, databaseRecipe, openHelperClass, PACKAGE_TO_GENERATE, mFiler);
+
             } catch (IOException e) {
                 e.printStackTrace();
                 mMessager.error("error creating java file");
@@ -251,42 +270,6 @@ public class AutoSQLiteProcessor extends AbstractProcessor {
         }
 
         return false;
-    }
-
-    private void writeClassesForDatabase(DatabaseRecipe currentVersionDbRecipe,
-                                         Set<DatabaseRecipe> versionedDbRecipes) throws IOException, RuntimeException {
-
-        final String dbName = currentVersionDbRecipe.name;
-        String openHelperClassName = toPascalCase(dbName) + OPEN_HELPER_CLASS_SUFFIX;
-        ClassName openHelperClass = ClassName.get(PACKAGE_TO_GENERATE, openHelperClassName);
-
-        for (EntityRecipe entityRecipe : currentVersionDbRecipe.entityRecipes) {
-            String interfaceName = toPascalCase(entityRecipe.name);
-            String nullClassName = NULL_CLASS_PREFIX + interfaceName;
-            String implClassName = interfaceName + IMPL_CLASS_SUFFIX;
-            String diffClassName = interfaceName + DIFF_CLASS_SUFFIX;
-            String sourceClassName = interfaceName + SOURCE_CLASS_SUFFIX;
-            ClassName entityInterface = ClassName.get(PACKAGE_TO_GENERATE, interfaceName);
-            ClassName entityImplClass = ClassName.get(PACKAGE_TO_GENERATE, implClassName);
-            ClassName nullEntityClass = ClassName.get(PACKAGE_TO_GENERATE, nullClassName);
-            ClassName diffClass = ClassName.get(PACKAGE_TO_GENERATE, diffClassName);
-            ClassName sourceClass = ClassName.get(PACKAGE_TO_GENERATE, sourceClassName);
-
-            try {
-                InterfaceWriter.write(entityRecipe, entityInterface, PACKAGE_TO_GENERATE, mFiler);
-                ImplClassWriter.write(entityRecipe, entityImplClass, entityInterface, PACKAGE_TO_GENERATE, mFiler);
-                NullClassWriter.write(entityRecipe, entityInterface, nullEntityClass, PACKAGE_TO_GENERATE, mFiler);
-                DiffClassWriter.write(entityRecipe, entityImplClass, diffClass, entityInterface, PACKAGE_TO_GENERATE, mFiler);
-                SourceClassWriter.write(entityRecipe, sourceClass, entityInterface,
-                        entityImplClass, nullEntityClass, diffClass, openHelperClass, PACKAGE_TO_GENERATE, mFiler);
-            } catch (IOException e) {
-                e.printStackTrace();
-                mMessager.error("error creating java file");
-            } catch (RuntimeException e) {
-                e.printStackTrace();
-                mMessager.error("internal error in code generation");
-            }
-        }
     }
 
     @Nullable
